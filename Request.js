@@ -10,6 +10,12 @@ define([
 
 	var push = [].push;
 
+	function encodeString(value) {
+		return encodeURIComponent(value).replace(/[\-_\.~!\\'\(\)]/g, function (char) {
+			return '%' + char.charCodeAt(0).toString(16).toUpperCase();
+		});
+	}
+
 	return declare(Store, {
 		// summary:
 		//		This is a basic store for RESTful communicating with a server through JSON
@@ -187,14 +193,16 @@ define([
 			}
 			var target = args[1];
 			if (target) {
-				if(target._renderUrl) {
+				if (target._renderUrl) {
 					// detected nested query, and render the url inside as an argument
 					target = '(' + target._renderUrl() + ')';
 				} else if (target instanceof Array) {
 					target = '(' + target + ')';
+				} else if (!/\d{4}-\d{2}-\d{2}/.test(target)) {
+					target = encodeString(target);
 				}
 			}
-			return [encodeURIComponent(args[0]) + '=' + (type === 'eq' ? '' : type + '=') + encodeURIComponent(target)];
+			return [encodeString(args[0]) + '=' + (type === 'eq' ? '' : type + '=') + target];
 		},
 		_renderSortParams: function (sort) {
 			// summary:
@@ -204,13 +212,13 @@ define([
 
 			var sortString = arrayUtil.map(sort, function (sortOption) {
 				var prefix = sortOption.descending ? this.descendingPrefix : this.ascendingPrefix;
-				return prefix + encodeURIComponent(sortOption.property);
+				return prefix + encodeString(sortOption.property);
 			}, this);
 
 			var params = [];
 			if (sortString) {
 				params.push(this.sortParam
-					? encodeURIComponent(this.sortParam) + '=' + sortString
+					? encodeString(this.sortParam) + '=' + sortString
 					: 'sort(' + sortString + ')'
 				);
 			}
@@ -243,6 +251,20 @@ define([
 				params.push(this.selectParam + '=' + properties);
 			} else {
 				params.push('select(' + properties + ')');
+			}
+			return params;
+		},
+
+		_renderGroupbyParams: function (properties) {
+			// summary:
+			//		Constructs groupby-related params to be inserted in the query string
+			// returns: String
+			//		groupby-related params to be inserted in the query string
+			var params = [];
+			if (this.groupbyParam) {
+				params.push(this.groupbyParam + '=' + properties);
+			} else {
+				params.push('groupby(' + properties + ')');
 			}
 			return params;
 		},
