@@ -281,6 +281,10 @@ define([
 			type: 'select'
 		}),
 
+		groupby: new QueryMethod({
+			type: 'groupby'
+		}),
+		
 		_getQuerierFactory: function (type) {
 			var uppercaseType = type[0].toUpperCase() + type.substr(1);
 			return this['_create' + uppercaseType + 'Querier'];

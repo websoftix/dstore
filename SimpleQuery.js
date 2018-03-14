@@ -180,7 +180,27 @@ define([
 					});
 			};
 		},
-
+		
+		_createGroupbyQuerier: function (properties) {
+			return function (data) {
+				var l = properties.length;
+				return arrayUtil.map(data, properties instanceof Array ?
+					// array of properties
+					function (object) {
+						var groupbyObject = {};
+						for (var i = 0; i < l; i++) {
+							var property = properties[i];
+							groupbyObject[property] = object[property];
+						}
+						return groupbyObject;
+					} :
+					// single property
+					function (object) {
+						return object[properties];
+					});
+			};
+		},
+		
 		_createSortQuerier: function (sorted) {
 			var queryAccessors = this.queryAccessors;
 			return function (data) {
