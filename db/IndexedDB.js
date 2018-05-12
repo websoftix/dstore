@@ -111,7 +111,8 @@ define([
 							}
 							for (var index in storeConfig) {
 								if (!idbStore.indexNames.contains(index) && index !== 'autoIncrement' &&
-										storeConfig[index].indexed !== false) {
+									index !== 'idProperty' &&
+									storeConfig[index].indexed !== false) {
 									idbStore.createIndex(index, index, storeConfig[index]);
 								}
 							}
@@ -258,8 +259,8 @@ define([
 			this.cachedCount = {}; // clear the count cache
 			var store = this;
 			return this._callOnStore(options.overwrite === false ? 'add' : 'put',[object])
-				.then(function (object) {
-					return store._restore(object);
+				.then(function (id) {
+					return store.get(id);
 				});
 		},
 
