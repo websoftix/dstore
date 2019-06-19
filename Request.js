@@ -183,13 +183,15 @@ define([
 				return [args[0]];
 			}
 			if (type === 'and' || type === 'or') {
-				return [arrayUtil.map(filter.args, function (arg) {
+				var res = arrayUtil.map(filter.args, function (arg) {
 					// render each of the arguments to and or or, then combine by the right operator
 					var renderedArg = this._renderFilterParams(arg);
 					return ((arg.type === 'and' || arg.type === 'or') && arg.type !== type) ?
 						// need to observe precedence in the case of changing combination operators
 						'(' + renderedArg + ')' : renderedArg;
-				}, this).join(type === 'and' ? '&' : '|')];
+				}, this).join(type === 'and' ? '&' : '|');
+				
+				return type === 'or' ? ['(' + res + ')']: [res];
 			}
 			var target = args[1];
 			if (target) {
