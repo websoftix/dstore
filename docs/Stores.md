@@ -5,7 +5,7 @@ The dstore package includes several store implementations that can be used for t
 * `Memory` - This is a simple memory-based store that takes an array and provides access to the objects in the array through the store interface.
 * `Request` - This is a simple server-based collection that sends HTTP requests following REST conventions to access and modify data requested through the store interface.
 * `Rest` - This is a store built on `Request` that implements add, remove, and update operations using HTTP requests following REST conventions.
-* `RequestMemory` - This is a Memory based store that will retrieve its contents from a server/URL.
+* `RequestMemory` - This is a Memory-based store that will retrieve its contents from a server/URL.
 * `LocalDB` - This a store based on the browser's local database/storage capabilities. Data stored in this store will be persisted in the local browser.
 * `Cache` - This is a store mixin that combines a master and caching store to provide caching functionality.
 * `Trackable` - This a store mixin that adds index information to `add`, `update`, and `remove` events of tracked store instances. This adds a track() method for tracking stores.
@@ -19,20 +19,26 @@ All the stores can be instantiated with an options argument to the constructor, 
 
 Stores can also be constructed by combining a base store with mixins. The various store mixins are designed to be combined through dojo `declare` to create a class to instantiate a store. For example, if you wish to add tracking and tree functionality to a Memory store, we could combine these:
 
-    // create the class based on the Memory store with added functionality
-    var TrackedTreeMemoryStore = declare([Memory, Trackable, Tree]);
-    // now create an instance
-    var myStore = new TrackedTreeMemoryStore({data: [...]});
+```javascript
+// create the class based on the Memory store with added functionality
+var TrackedTreeMemoryStore = declare([Memory, Trackable, Tree]);
+// now create an instance
+var myStore = new TrackedTreeMemoryStore({ data: [...] });
+```
 
 The store mixins can only be used as mixins, but stores can be combined with other stores as well. For example, if we wanted to add the Rest functionality to the RequestMemory store (so the entire store data was retrieved from the server on construction, but data changes are sent to the server), we could write:
 
-    var RestMemoryStore = declare([Rest, RequestMemory]);
-    // now create an instance
-    var myStore = new RestMemoryStore({target: '/data-source/'});
+```javascript
+var RestMemoryStore = declare([Rest, RequestMemory]);
+// now create an instance
+var myStore = new RestMemoryStore({ target: '/data-source/' });
+```
 
-Another common case is needing to add tracking to the `dstore/Rest` store, which requires client side querying, which be provided by `dstore/SimpleQuery`:
+Another common case is needing to add tracking to the `dstore/Rest` store, which requires client side querying, which can be provided by `dstore/SimpleQuery`:
 
+```javascript
 var TrackedRestStore = declare([Rest, SimpleQuery, Trackable]);
+```
 
 ## Memory
 
@@ -40,13 +46,15 @@ The Memory store is a basic client-side in-memory store that can be created from
 
 For example:
 
-    myStore = new Memory({
-        data: [{
-            id: 1,
-            aProperty: ...,
-            ...
-        }]
-    });
+```javascript
+myStore = new Memory({
+    data: [{
+        id: 1,
+        aProperty: ...,
+        ...
+    }]
+});
+```
 
 The array supplied as the `data` property will not be copied, it will be used as-is as the store's data. It can be changed at run-time with the `setData` method.
 
@@ -71,17 +79,37 @@ This is a simple collection for accessing data by retrieval from a server (typic
 * `rangeStartParam` and `rangeCountParam` - This will specify the query parameter to use for specifying the range. This will default to `limit(<count>,<start>)` in the query string.
 * `useRangeHeaders` - This will specify that range information should be specified in the `Range` header.
 
+### Server considerations for a `Request/Rest` store
+
+The response should be in JSON format. It should include the data and a number indicating the total number of items:
+
+* **data**: the response can either be a JSON array containing the items or a JSON object with an `items` property that is an array containing the items
+* **total**: if the response is an array then the total should be specified in the `Content-Range` header, e.g.:
+  * `Content-Range: items 0-24/500`
+  * If the response is an object then the total should be specified on the `total` property of the object, e.g.:
+
+```
+{
+    "total": 500,
+    "items": [ /* ...items */ ]
+}
+```
+
 ## Rest
 
 This store extends the Request store, to add functionality for adding, updating, and removing objects. All modifications trigger HTTP requests to the server using the corresponding RESTful HTTP methods. A `get()` triggers a `GET`, `remove()` triggers a `DELETE`, and `add()` and `put()` will trigger a `PUT` if an id is available or provided, and a `POST` will be used to create new objects with server provided ids.
 
 For example:
 
-    myStore = new Rest({
-        target: '/PathToData/'
-    });
+```javascript
+myStore = new Rest({
+    target: '/PathToData/'
+});
+```
 
 All modification or retrieval methods (except `getIdentity()`) on `Request` and `Rest` execute asynchronously, returning a promise.
+
+The server must respond to GET requests for an item by ID with an object representing the item (not an array).
 
 ## Store
 
@@ -89,8 +117,9 @@ This is the base class used for all stores, providing basic functionality for tr
 
 ## RequestMemory
 
-This store provides client-side querying functionality, but will load its data from the server, using the provided URL. This is
-an asynchronous store since queries and data retrieval may be made before the data has been retrieved from the server.
+This store provides client-side querying functionality, but will load its data from the server up-front, using the provided URL. This is an asynchronous store since queries and data retrieval may be made before the data has been retrieved from the server.
+
+`RequestMemory` accepts the same `target` option for its URL as `Request` and `Rest`. Additionally, it supports a `refresh` method which can be called (and optionally passed a new target URL) to reload data from the server endpoint.
 
 ## LocalDB
 
@@ -112,36 +141,40 @@ Alternately a number can be provided as a property configuration, and will be us
 
 An example database configuration object is:
 
-    var dbConfig = {
-        version: 5,
-        stores: {
-            posts: {
-                name: 10,
-                id: {
-                    autoIncrement: true,
-                    preference: 100
-                },
-                tags: {
-                    multiEntry: true,
-                    preference: 5
-                },
-                content: {
-                    indexed: false
-                }
+```javascript
+var dbConfig = {
+    version: 5,
+    stores: {
+        posts: {
+            name: 10,
+            id: {
+                autoIncrement: true,
+                preference: 100
             },
-            commments: {
-                author: {},
-                content: {
-                    indexed: false
-                }
+            tags: {
+                multiEntry: true,
+                preference: 5
+            },
+            content: {
+                indexed: false
+            }
+        },
+        commments: {
+            author: {},
+            content: {
+                indexed: false
             }
         }
-    };
+    }
+};
+```
 
 In addition, each store should define a `storeName` property to identify which database store corresponds to the store instance. For example:
 
-    var postsStore = new LocalDB({dbConfig: dbConfig, storeName: 'posts'});
-    var commentsStore = new LocalDB({dbConfig: dbConfig, storeName: 'comments'});
+```javascript
+var postsStore = new LocalDB({ dbConfig: dbConfig, storeName: 'posts' });
+var commentsStore = new LocalDB({ dbConfig: dbConfig, storeName: 'comments' });
+```
 
 Once created, these stores can be used like any other store.
 
@@ -149,9 +182,11 @@ Once created, these stores can be used like any other store.
 
 This is a mixin that can be used to add caching functionality to a store. This can also be used to wrap an existing store, by using the static `create` function:
 
-    var cachedStore = Cache.create(existingStore, {
-        cachingStore: new Memory()
-    });
+```javascript
+var cachedStore = Cache.create(existingStore, {
+    cachingStore: new Memory()
+});
+```
 
 This store has the following properties and methods:
 
@@ -160,7 +195,7 @@ Name | Description
 `cachingStore` | This can be used to define the store to be used for caching the data. By default a Memory store will be used.
 `isValidFetchCache` | This is a flag that indicates if the data fetched for a collection/store can be cached to fulfill subsequent fetches. This is false by default, and the value will be inherited by downstream collections. It is important to note that only full `fetch()` requests will fill the cache for subsequent `fetch()` requests. `fetchRange()` requests will not fulfill a collection, and subsequent `fetchRange()` requests will not go to the cache unless the collection has been fully loaded through a `fetch()` request.
 `allLoaded` | This is a flag indicating that the given collection/store has its data loaded. This can be useful if you want to provide a caching store prepopulated with data for a given collection. If you are setting this to true, make sure you set `isValidFetchCache` to true as well to indicate that the data is available for fetching.
-`canCacheQuery(method, args)' | This can be a boolean or a method that will indicate if a collection can be cached (if it should have `isValidFetchCache` set to true), based on the query method and arguments used to derive the collection.
+`canCacheQuery(method, args)` | This can be a boolean or a method that will indicate if a collection can be cached (if it should have `isValidFetchCache` set to true), based on the query method and arguments used to derive the collection.
 `isLoaded(object)` | This can be defined to indicate if a given object in a query can be cached (by default, objects are cached).
 
 
@@ -183,21 +218,23 @@ The Trackable mixin adds functionality for tracking the index positions of objec
 
 [Resource Query Language (RQL)](https://github.com/persvr/rql) is a query language specifically designed to be easily embedded in URLs (it is a compatible superset of standard encoded query parameters), as well as easily interpreted within JavaScript for client-side querying. Therefore RQL is a query language suitable for consistent client and server-delegated queries. The dstore packages serializes complex filter/queries into RQL (RQL supersets standard query parameters, and so simple queries are simply serialized as standard query parameters).
 
-dstore also includes support for using RQL as the query language for filtering. This can be enabled by mixin `dstore/extensions/RqlQuery` into your collection type:
+dstore also includes support for using RQL as the query language for filtering. This can be enabled by mixing `dstore/extensions/RqlQuery` into your collection type:
 
-    require([
-        'dojo/_base/declare',
-        'dstore/Memory',
-        'dstore/extensions/RqlQuery'
-    ], function (declare, Memory, RqlQuery) {
-        var RqlStore = declare([ Memory, RqlQuery ]);
-        var rqlStore = new RqlStore({
-            ...
-        });
+```javascript
+require([
+    'dojo/_base/declare',
+    'dstore/Memory',
+    'dstore/extensions/RqlQuery'
+], function (declare, Memory, RqlQuery) {
+    var RqlStore = declare([ Memory, RqlQuery ]);
+    var rqlStore = new RqlStore({
+        ...
+    });
 
-        rqlStore.filter('price<10|rating>3').forEach(function (product) {
-            // return each product that has a price less than 10 or a rating greater than 3
-        });
-    }};
+    rqlStore.filter('price<10|rating>3').forEach(function (product) {
+        // return each product that has a price less than 10 or a rating greater than 3
+    });
+}};
+```
 
 Make sure you have installed/included the [rql](https://github.com/persvr/rql) package if you are using the RQL query engine.

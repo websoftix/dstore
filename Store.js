@@ -4,12 +4,11 @@ define([
 	'dojo/aspect',
 	'dojo/has',
 	'dojo/when',
-	'dojo/Deferred',
 	'dojo/_base/declare',
 	'./QueryMethod',
 	'./Filter',
 	'dojo/Evented'
-], function (lang, arrayUtil, aspect, has, when, Deferred, declare, QueryMethod, Filter, Evented) {
+], function (lang, arrayUtil, aspect, has, when, declare, QueryMethod, Filter, Evented) {
 
 	// module:
 	//		dstore/Store
@@ -159,7 +158,11 @@ define([
 			event.type = type;
 			try {
 				return this.storage.emit(type, event);
-			} finally {
+			}
+			catch (error) {
+				console.error(error);
+			}
+			finally {
 				// Return the initial value of event.cancelable because a listener error makes it impossible
 				// to know whether the event was actually canceled
 				return event.cancelable;
