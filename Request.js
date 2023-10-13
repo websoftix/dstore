@@ -3,10 +3,11 @@ define([
 	'dojo/_base/lang',
 	'dojo/_base/array',
 	'dojo/json',
+	"dojo/topic",
 	'dojo/_base/declare',
 	'./Store',
 	'./QueryResults'
-], function (request, lang, arrayUtil, JSON, declare, Store, QueryResults) {
+], function (request, lang, arrayUtil, JSON, topic, declare, Store, QueryResults) {
 
 	var push = [].push;
 
@@ -138,6 +139,14 @@ define([
 			var requestUrl = this._renderUrl(kwArgs.queryParams);
 
 			var response = this._issueFetchRequest(requestUrl, headers);
+
+			response.response.then(function (response) {
+				var lastUiVersion = response.getHeader('X-Ui-Version');
+				if (lastUiVersion) {
+					topic.publish("/lastUiVersion", lastUiVersion);
+				}
+			});
+
 			var collection = this;
 			var parsedResponse = response.then(function (response) {
 				return collection.parse(response);
@@ -190,8 +199,8 @@ define([
 						// need to observe precedence in the case of changing combination operators
 						'(' + renderedArg + ')' : renderedArg;
 				}, this).join(type === 'and' ? '&' : '|');
-				
-				return type === 'or' ? ['(' + res + ')']: [res];
+
+				return type === 'or' ? ['(' + res + ')'] : [res];
 			}
 			var target = args[1];
 			if (target) {
