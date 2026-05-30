@@ -47,6 +47,16 @@ define([
 			return value >= required;
 		},
 		match: function match(value, required, object) {
+			if (!(required instanceof RegExp)) {
+				// FilteredGridPane.defaultFilter sends glob strings like '*foo*' for
+				// server-side LIKE matching. When Trackable re-evaluates the filter
+				// client-side (e.g. after an inline edit), build an equivalent
+				// case-insensitive RegExp so a plain string/number does not blow up
+				// on required.test().
+				required = new RegExp('^' + String(required)
+					.replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+					.replace(/\*/g, '.*') + '$', 'i');
+			}			
 			return required.test(value, object);
 		},
 		contains: function contains(value, required, object, key) {
